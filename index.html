@@ -166,6 +166,11 @@ footer { text-align: center; color: var(--muted); font-size: 13px; margin: 26px 
       <li>Zu wenig RAM → <b>Paging</b> auf die SSD → der PC wird langsam.</li>
     </ul>
   </div>
+  <div class="note blue hidden" id="dlBox">
+    <b>📄 Musterlösung für später</b><br>
+    Alle 20 Quiz-Fragen mit Lösung, Erklärung und Wiki-Kapitel, zum Lernen für die Prüfung.
+    <div class="row"><a class="btn" id="dl" href="RAM-Quiz-Musterloesung.pdf" download="RAM-Quiz-Musterloesung.pdf">Musterlösung herunterladen (PDF)</a></div>
+  </div>
   <div class="row">
     <button class="btn green" id="again">Nochmal spielen ↻</button>
     <button class="btn ghost" id="toVideo">Video nochmal ansehen</button>
@@ -374,6 +379,7 @@ function finish() {
   const msg = q >= 0.9 ? "RAM-Profi! 🧠" : q >= 0.7 ? "Stark! 💪" : q >= 0.5 ? "Gut gemacht! 👍" : "Schau dir das Video nochmal an 🎬";
   $("rText").textContent = `${right} von ${ROUNDS} richtig · Platz ${rank} · ${msg}`;
   $("resultBox").classList.remove("hidden");
+  $("dlBox").classList.remove("hidden");
   renderBoard();
   show("pResult");
 }
@@ -413,7 +419,7 @@ $("name").onkeydown = e => { if (e.key === "Enter") startQuiz(); };
 $("start").onclick = startQuiz;
 $("next").onclick = next;
 $("again").onclick = () => { $("name").value = ""; $("start").disabled = true; show("pStart"); $("name").focus(); };
-$("peek").onclick = () => { lastEntry = null; renderBoard(); $("resultBox").classList.add("hidden"); show("pResult"); };
+$("peek").onclick = () => { lastEntry = null; renderBoard(); $("resultBox").classList.add("hidden"); $("dlBox").classList.add("hidden"); show("pResult"); };
 $("reset").onclick = () => {
   if (confirm("Bestenliste auf diesem Gerät wirklich löschen?")) { memoryBoard = []; lastEntry = null; saveBoard([]); renderBoard(); }
 };
