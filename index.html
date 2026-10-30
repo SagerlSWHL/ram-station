@@ -175,7 +175,7 @@ footer { text-align: center; color: var(--muted); font-size: 13px; margin: 26px 
 
 <script>
 "use strict";
-// Fragenpool: 10 von 15 werden pro Runde zufällig gezogen. Die erste Antwort ist jeweils die richtige.
+// Fragenpool: 10 von 18 werden pro Runde zufällig gezogen. Die erste Antwort ist jeweils die richtige.
 const POOL = [
   { q: "Wofür steht die Abkürzung RAM?",
     a: ["Random Access Memory", "Read And Modify", "Rapid Access Module", "Remote Application Memory"],
@@ -222,6 +222,15 @@ const POOL = [
   { q: "Warum sind die Kontakte eines RAM-Riegels vergoldet?",
     a: ["Gold korrodiert nicht, der Kontakt bleibt zuverlässig", "Damit der Riegel wertvoller aussieht", "Gold speichert zusätzliche Daten", "Damit der Riegel schwerer ist"],
     why: "Kupfer würde oxidieren und schlecht leiten. Gold bleibt sauber, deshalb nicht mit den Fingern anfassen." },
+  { q: "Warum ist es gut für die Umwelt, RAM aufzurüsten (Green IT)?",
+    a: ["Der PC wird länger genutzt, es entsteht weniger Elektroschrott", "Neuer RAM verbraucht gar keinen Strom", "Der alte RAM wird dabei automatisch recycelt", "RAM besteht aus nachwachsenden Rohstoffen"],
+    why: "Mehr RAM macht ältere PCs oft wieder flott. Das verlängert die Nutzungsdauer und vermeidet Elektroschrott." },
+  { q: "Was solltest du tun, bevor du einen RAM-Riegel anfasst?",
+    a: ["Ein unlackiertes Metallteil berühren oder ein ESD-Armband tragen", "Die goldenen Kontakte mit dem Finger sauber reiben", "Den PC eingeschaltet lassen, damit er den Riegel erkennt", "Den Riegel kurz anpusten"],
+    why: "Statische Aufladung (ESD) kann die Chips zerstören. Das Berühren von Metall leitet sie vorher ab." },
+  { q: "Woran erkennst du, dass ein Desktop-Riegel richtig eingebaut ist?",
+    a: ["Beide Haltebügel rasten hörbar „klick“ ein", "Der Riegel steht leicht schräg im Slot", "Ein Bügel bleibt offen, damit Luft durchkommt", "Der PC piept beim Start dreimal"],
+    why: "Mit beiden Daumen gleichmäßig drücken, bis beide Bügel von selbst einrasten. Piepen beim Start heißt oft: Der Riegel sitzt nicht richtig." },
 ];
 const ROUNDS = 10, SECONDS = 20, KEY = "ram-station-bestenliste";
 const KEYS = [["A", "#1f4e79"], ["B", "#ef6c00"], ["C", "#2f7d32"], ["D", "#6a1b9a"]];
