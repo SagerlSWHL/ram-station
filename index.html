@@ -116,7 +116,7 @@ footer { text-align: center; color: var(--muted); font-size: 13px; margin: 26px 
 <!-- ② Start -->
 <section id="pStart" class="card hidden" style="--c: var(--orange)">
   <h2>🏆 Quiz: Wie gut kennst du RAM?</h2>
-  <p>10 Fragen, je <b>20 Sekunden</b>. Richtige Antwort = <b>500 Punkte</b> plus bis zu <b>500 Bonuspunkte</b>, je schneller du bist.
+  <p>7 Fragen, je <b>20 Sekunden</b>. Richtige Antwort = <b>500 Punkte</b> plus bis zu <b>500 Bonuspunkte</b>, je schneller du bist.
     Nach jeder Frage siehst du kurz, warum die Antwort stimmt.</p>
   <label for="name"><b>Dein Name oder Teamname</b> <span class="muted small">(erscheint in der Bestenliste, bitte nur Vorname)</span></label>
   <div class="row" style="margin-top:6px">
@@ -131,7 +131,7 @@ footer { text-align: center; color: var(--muted); font-size: 13px; margin: 26px 
 
 <!-- ② Frage -->
 <section id="pQuiz" class="card hidden" style="--c: var(--orange)">
-  <div class="qhead"><span id="qNr">Frage 1 / 10</span><span class="score" id="qScore">0 Punkte</span></div>
+  <div class="qhead"><span id="qNr">Frage 1 / 7</span><span class="score" id="qScore">0 Punkte</span></div>
   <div class="timer"><div id="bar"></div></div>
   <div class="question" id="qText"></div>
   <div class="answers" id="qAnswers"></div>
@@ -175,7 +175,7 @@ footer { text-align: center; color: var(--muted); font-size: 13px; margin: 26px 
 
 <script>
 "use strict";
-// Fragenpool: 10 von 18 werden pro Runde zufällig gezogen. Die erste Antwort ist jeweils die richtige.
+// Fragenpool: 7 von 18 werden pro Runde zufällig gezogen. Die erste Antwort ist jeweils die richtige.
 const POOL = [
   { q: "Wofür steht die Abkürzung RAM?",
     a: ["Random Access Memory", "Read And Modify", "Rapid Access Module", "Remote Application Memory"],
@@ -232,7 +232,7 @@ const POOL = [
     a: ["Beide Haltebügel rasten hörbar „klick“ ein", "Der Riegel steht leicht schräg im Slot", "Ein Bügel bleibt offen, damit Luft durchkommt", "Der PC piept beim Start dreimal"],
     why: "Mit beiden Daumen gleichmäßig drücken, bis beide Bügel von selbst einrasten. Piepen beim Start heißt oft: Der Riegel sitzt nicht richtig." },
 ];
-const ROUNDS = 10, SECONDS = 20, KEY = "ram-station-bestenliste";
+const ROUNDS = 7, SECONDS = 20, KEY = "ram-station-bestenliste-7";
 const KEYS = [["A", "#1f4e79"], ["B", "#ef6c00"], ["C", "#2f7d32"], ["D", "#6a1b9a"]];
 
 const $ = id => document.getElementById(id);
@@ -341,7 +341,8 @@ function finish() {
   saveBoard(memoryBoard);
   const rank = memoryBoard.indexOf(lastEntry) + 1;
   $("rScore").textContent = `${score} Punkte`;
-  const msg = right >= 9 ? "RAM-Profi! 🧠" : right >= 7 ? "Stark! 💪" : right >= 5 ? "Gut gemacht! 👍" : "Schau dir das Video nochmal an 🎬";
+  const q = right / ROUNDS;
+  const msg = q >= 0.9 ? "RAM-Profi! 🧠" : q >= 0.7 ? "Stark! 💪" : q >= 0.5 ? "Gut gemacht! 👍" : "Schau dir das Video nochmal an 🎬";
   $("rText").textContent = `${right} von ${ROUNDS} richtig · Platz ${rank} · ${msg}`;
   $("resultBox").classList.remove("hidden");
   renderBoard();
