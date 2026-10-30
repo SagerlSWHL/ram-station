@@ -59,6 +59,10 @@ input[type=text]:focus { outline: none; border-color: var(--orange); }
 .timer { height: 10px; background: #eee; border-radius: 5px; overflow: hidden; margin: 10px 0 14px; }
 .timer div { height: 100%; width: 100%; background: var(--orange); transition: width .1s linear; }
 .question { font-size: 20px; font-weight: 700; margin: 4px 0 14px; }
+.tech { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baseline; margin: 2px 0 6px; }
+.tech span:first-child { background: var(--tc); color: #fff; font-weight: 700; font-size: 13px; padding: 3px 10px; border-radius: 12px; }
+.tech .hint { color: var(--muted); font-size: 14px; font-style: italic; }
+.answers.two { grid-template-columns: 1fr 1fr; }
 .answers { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 @media (max-width: 600px) { .answers { grid-template-columns: 1fr; } }
 .answer { text-align: left; font: inherit; padding: 14px 14px 14px 52px; border-radius: 10px; cursor: pointer;
@@ -116,7 +120,7 @@ footer { text-align: center; color: var(--muted); font-size: 13px; margin: 26px 
 <!-- ② Start -->
 <section id="pStart" class="card hidden" style="--c: var(--orange)">
   <h2>🏆 Quiz: Wie gut kennst du RAM?</h2>
-  <p>7 Fragen, je <b>20 Sekunden</b>. Richtige Antwort = <b>500 Punkte</b> plus bis zu <b>500 Bonuspunkte</b>, je schneller du bist.
+  <p>10 Fragen, je <b>25 Sekunden</b>: je 2 Ja/Nein-, hypothetische, paradoxe, systemische und indirekte Fragen. Richtige Antwort = <b>500 Punkte</b> plus bis zu <b>500 Bonuspunkte</b>, je schneller du bist.
     Nach jeder Frage siehst du kurz, warum die Antwort stimmt.</p>
   <label for="name"><b>Dein Name oder Teamname</b> <span class="muted small">(erscheint in der Bestenliste, bitte nur Vorname)</span></label>
   <div class="row" style="margin-top:6px">
@@ -131,8 +135,9 @@ footer { text-align: center; color: var(--muted); font-size: 13px; margin: 26px 
 
 <!-- ② Frage -->
 <section id="pQuiz" class="card hidden" style="--c: var(--orange)">
-  <div class="qhead"><span id="qNr">Frage 1 / 7</span><span class="score" id="qScore">0 Punkte</span></div>
+  <div class="qhead"><span id="qNr">Frage 1 / 10</span><span class="score" id="qScore">0 Punkte</span></div>
   <div class="timer"><div id="bar"></div></div>
+  <div class="tech" id="qTech"><span id="qTechName"></span><span class="hint" id="qTechHint"></span></div>
   <div class="question" id="qText"></div>
   <div class="answers" id="qAnswers"></div>
   <div id="feedback" class="hidden"></div>
@@ -175,64 +180,79 @@ footer { text-align: center; color: var(--muted); font-size: 13px; margin: 26px 
 
 <script>
 "use strict";
-// Fragenpool: 7 von 18 werden pro Runde zufällig gezogen. Die erste Antwort ist jeweils die richtige.
+// Fragenpool nach Fragetechniken: pro Runde werden je 2 Fragen jeder Technik zufällig gezogen (10 Fragen).
+// Die erste Antwort ist jeweils die richtige. k = Kapitel im Wiki.
+const TECH = {
+  jn:   { name: "Ja/Nein-Frage",              icon: "✅", hint: "Kurz entscheiden: Ja oder Nein?", color: "#1f4e79" },
+  hyp:  { name: "Hypothetische Frage",        icon: "💭", hint: "Stell dir vor … was wäre dann?", color: "#ef6c00" },
+  par:  { name: "Paradoxe Frage",             icon: "🔀", hint: "Klingt widersprüchlich, ist es aber nicht.", color: "#6a1b9a" },
+  sys:  { name: "Systemische Frage",          icon: "🔗", hint: "Wie hängt alles zusammen?", color: "#2f7d32" },
+  ind:  { name: "Indirekte Informationsfrage", icon: "🙋", hint: "Höflich verpackte Wissensfrage.", color: "#c62828" },
+};
 const POOL = [
-  { q: "Wofür steht die Abkürzung RAM?",
+  // ---- Ja/Nein
+  { t: "jn", k: 5, q: "Passt ein DDR5-Riegel in einen DDR4-Steckplatz?", a: ["Nein", "Ja"],
+    why: "Die Kerbe sitzt bei jeder Generation an einer anderen Stelle. So kann man keinen falschen Riegel einbauen." },
+  { t: "jn", k: 1, q: "Behält der RAM seine Daten, wenn der Strom ausfällt?", a: ["Nein", "Ja"],
+    why: "RAM ist flüchtig: Ohne Strom sind alle Daten weg. SSD, Festplatte und USB-Stick behalten sie." },
+  { t: "jn", k: 4, q: "Braucht SRAM, der Cache in der CPU, einen Refresh?", a: ["Nein", "Ja"],
+    why: "SRAM speichert jedes Bit in einem Flipflop und braucht keinen Refresh. Nur DRAM muss ständig aufgefrischt werden." },
+  { t: "jn", k: 6, q: "Sind 2 × 8 GB oft schneller als 1 × 16 GB?", a: ["Ja", "Nein"],
+    why: "Zwei gleiche Riegel laufen im Dual-Channel. Das verdoppelt die Bandbreite fast." },
+  // ---- Hypothetisch
+  { t: "hyp", k: 7, q: "Stell dir vor, der RAM ist voll und du öffnest noch ein Programm. Was macht das Betriebssystem?",
+    a: ["Es lagert Seiten auf die SSD aus, der PC wird langsam", "Es löscht das älteste Programm", "Es baut automatisch mehr RAM ein", "Der PC schaltet sich sofort aus"],
+    why: "Das nennt man Paging: Selten genutzte Seiten wandern auf die SSD. Die ist rund 1000-mal langsamer, deshalb wird der PC träge." },
+  { t: "hyp", k: 5, q: "Stell dir vor, die Kontakte eines Riegels wären aus blankem Kupfer statt vergoldet. Was passiert mit der Zeit?",
+    a: ["Sie oxidieren, es gibt Wackelkontakte und Abstürze", "Der RAM wird schneller", "Nichts, Kupfer rostet nie", "Der Riegel passt nicht mehr in den Slot"],
+    why: "Kupfer oxidiert an der Luft, die Oxidschicht leitet schlecht. Gold rostet nicht, deshalb sind die Kontakte vergoldet." },
+  { t: "hyp", k: 8, q: "Stell dir vor, in allen Laptops wäre der RAM verlötet. Was bedeutet das für die Umwelt?",
+    a: ["Man kann nicht aufrüsten, Geräte landen früher im Elektroschrott", "Weniger Elektroschrott, weil nichts kaputtgeht", "Gar nichts, RAM ist ja klein", "Die Laptops verbrauchen keinen Strom mehr"],
+    why: "Verlöteten RAM kann man nicht aufrüsten. Reicht er nicht mehr, wird das ganze Gerät ersetzt. Green IT heißt: aufrüsten statt neu kaufen." },
+  { t: "hyp", k: 3, q: "Stell dir vor, der RAM würde nicht mehr aufgefrischt (kein Refresh). Was passiert?",
+    a: ["Die Ladung in den Kondensatoren entweicht, die Daten gehen verloren", "Der RAM wird schneller", "Die Daten wandern automatisch auf die SSD", "Nichts, der Refresh ist nur Deko"],
+    why: "Jedes Bit ist eine winzige Ladung, die langsam entweicht. Ohne Refresh (bei DDR4 alle 64 ms) wären die Daten weg." },
+  // ---- Paradox
+  { t: "par", k: 7, q: "Mehr RAM macht die CPU keinen Rechenschritt schneller. Warum wird der PC trotzdem schneller?",
+    a: ["Es muss weniger auf die langsame SSD ausgelagert werden", "Weil RAM die CPU übertaktet", "Weil mehr RAM mehr Strom liefert", "Er wird gar nicht schneller"],
+    why: "Mit genug RAM gibt es kein Paging. Die CPU wartet seltener auf Daten und kann ihre volle Leistung nutzen." },
+  { t: "par", k: 13, q: "Der PC ist aus und hat keinen Strom. Warum sollst du trotzdem Metall berühren, bevor du den RAM anfasst?",
+    a: ["Dein Körper kann statisch aufgeladen sein und die Chips zerstören", "Damit der RAM warm wird", "Damit der PC sich nicht einschaltet", "Das ist nur ein Aberglaube"],
+    why: "Die Gefahr kommt vom eigenen Körper: Statische Entladung (ESD) kann Chips zerstören. Das Berühren von Metall leitet sie vorher ab." },
+  { t: "par", k: 4, q: "DDR überträgt doppelt so viele Daten wie SDRAM, obwohl der Takt gleich bleibt. Wie geht das?",
+    a: ["Es überträgt bei der steigenden und der fallenden Taktflanke", "Es hat doppelt so viele Kontakte", "Es komprimiert die Daten", "Es nutzt zwei CPUs gleichzeitig"],
+    why: "Double Data Rate: Daten werden bei beiden Flanken des Taktsignals übertragen, also zweimal pro Takt." },
+  { t: "par", k: 2, q: "Eine SSD speichert viel mehr als der RAM. Warum nimmt man sie trotzdem nicht als Arbeitsspeicher?",
+    a: ["Sie ist rund 1000-mal langsamer als RAM", "Sie ist flüchtig", "Sie passt nicht ins Gehäuse", "Sie kann keine Programme speichern"],
+    why: "Speicher unterscheiden sich in Kapazität und Zugriffsgeschwindigkeit. Die SSD ist groß, aber viel zu langsam für die CPU." },
+  // ---- Systemisch
+  { t: "sys", k: 2, q: "Du startest ein Spiel. In welcher Reihenfolge wandern die Daten?",
+    a: ["SSD → RAM → Cache → CPU", "CPU → SSD → RAM → Cache", "RAM → SSD → CPU → Cache", "Cache → SSD → CPU → RAM"],
+    why: "Das Spiel liegt auf der SSD, wird in den RAM geladen, und die CPU holt sich die Daten über ihren Cache." },
+  { t: "sys", k: 9, q: "KI-Rechenzentren kaufen riesige Mengen Spezialspeicher (HBM). Was bedeutet das für deinen PC?",
+    a: ["Hersteller bauen weniger DDR4/DDR5, RAM wird teurer", "RAM wird billiger, weil mehr produziert wird", "Dein PC wird automatisch schneller", "Gar nichts, das sind getrennte Märkte"],
+    why: "Die wenigen Hersteller verschieben Kapazität zu HBM (mehr Gewinn). Für normalen RAM bleibt weniger, die Preise steigen." },
+  { t: "sys", k: 6, q: "Bandbreite = Datenrate × 8 Byte. Wie viel schafft ein DDR4-3200-Riegel pro Kanal?",
+    a: ["25,6 GB/s", "3,2 GB/s", "400 MB/s", "256 GB/s"],
+    why: "3200 MT/s × 8 Byte = 25 600 MB/s = 25,6 GB/s. Im Dual-Channel sind es bis zu 51,2 GB/s." },
+  { t: "sys", k: 5, q: "Beim Start liest das BIOS/UEFI den kleinen SPD-Chip auf dem Riegel aus. Wozu?",
+    a: ["Um Größe, Geschwindigkeit und Wartezeiten des RAM einzustellen", "Um die Uhrzeit zu speichern", "Um das Betriebssystem zu laden", "Um den Lüfter zu steuern"],
+    why: "Im SPD-Chip stehen die Kenndaten des Riegels. Damit stellt das Mainboard den RAM richtig ein." },
+  // ---- Indirekte Informationsfragen
+  { t: "ind", k: 1, q: "Kannst du mir sagen, wofür die Abkürzung RAM steht?",
     a: ["Random Access Memory", "Read And Modify", "Rapid Access Module", "Remote Application Memory"],
     why: "RAM = Random Access Memory: Jede Speicherstelle kann direkt und gleich schnell angesprochen werden." },
-  { q: "Was passiert mit den Daten im RAM, wenn der Strom ausfällt?",
-    a: ["Sie sind weg", "Sie bleiben erhalten", "Sie werden automatisch auf die SSD gerettet", "Sie bleiben noch einen Tag erhalten"],
-    why: "RAM ist flüchtig: Ohne Strom kann nicht mehr aufgefrischt werden, und die Daten sind verloren." },
-  { q: "Welcher dieser Speicher ist NICHT flüchtig?",
-    a: ["SSD", "Arbeitsspeicher (RAM)", "Cache", "Register"],
-    why: "SSD, HDD und USB-Stick behalten ihre Daten ohne Strom. RAM, Cache und Register verlieren sie." },
-  { q: "Woraus besteht eine DRAM-Speicherzelle?",
-    a: ["1 Transistor + 1 Kondensator", "6 Transistoren", "Einer winzigen Magnetscheibe", "1 Widerstand + 1 Diode"],
-    why: "Der Transistor ist der Schalter, der Kondensator speichert die Ladung: geladen = 1, leer = 0." },
-  { q: "Warum muss DRAM ständig aufgefrischt werden (Refresh)?",
-    a: ["Die Ladung im Kondensator entweicht langsam", "Damit der PC kühler bleibt", "Weil die CPU sonst die Adressen vergisst", "Damit Windows schneller startet"],
-    why: "Die Ladung entweicht nach und nach, deshalb wird jede Zelle regelmäßig neu geladen (bei DDR4 innerhalb von 64 ms)." },
-  { q: "Was bedeutet DDR bei DDR-SDRAM?",
-    a: ["Daten werden 2× pro Takt übertragen", "Doppelt so viel Speicherplatz", "Zwei Riegel sind Pflicht", "Der RAM läuft mit doppelter Spannung"],
-    why: "Double Data Rate: Übertragung bei der steigenden UND der fallenden Taktflanke." },
-  { q: "Passt ein DDR5-Riegel in einen DDR4-Steckplatz?",
-    a: ["Nein, die Kerbe sitzt an einer anderen Stelle", "Ja, er läuft dann nur langsamer", "Ja, wenn man fest drückt", "Nur in Laptops"],
-    why: "Jede DDR-Generation hat die Kerbe woanders. So kann man keinen falschen Riegel einbauen." },
-  { q: "Wozu dient der kleine SPD-Chip auf dem RAM-Riegel?",
-    a: ["Er speichert die Kenndaten, die das BIOS/UEFI beim Start ausliest", "Er kühlt die Speicherchips", "Er ist ein extra Cache", "Er speichert das Passwort des PCs"],
-    why: "SPD = Serial Presence Detect: Größe, Geschwindigkeit und Timings stehen dort." },
-  { q: "Auf der Packung steht „DDR5-6000 CL30, 2 × 16 GB“. Wie viel Speicher ist das insgesamt?",
-    a: ["32 GB", "16 GB", "6000 GB", "30 GB"],
-    why: "2 Riegel × 16 GB = 32 GB. 6000 ist die Datenrate (MT/s), CL30 die Latenz." },
-  { q: "Wie groß ist die Bandbreite eines DDR4-3200-Riegels (pro Kanal)?",
-    a: ["25,6 GB/s", "3,2 GB/s", "12,8 GB/s", "320 GB/s"],
-    why: "Datenrate × 8 Byte: 3200 MT/s × 8 Byte = 25 600 MB/s = 25,6 GB/s." },
-  { q: "Was passiert beim Paging, wenn der RAM voll ist?",
-    a: ["Seiten werden auf die SSD ausgelagert, der PC wird langsamer", "Der PC schaltet sich ab", "Die CPU rechnet schneller", "Der RAM wird automatisch größer"],
-    why: "Das Betriebssystem lagert selten genutzte Seiten aus. Die SSD ist rund 1000-mal langsamer als RAM." },
-  { q: "Warum sind 2 × 8 GB oft schneller als 1 × 16 GB?",
-    a: ["Dual-Channel: zwei Riegel verdoppeln (fast) die Bandbreite", "Kleine Riegel sind immer schneller", "Weil 2 × 8 mehr als 16 ist", "Zwei Riegel brauchen weniger Strom"],
-    why: "Im Dual-Channel-Betrieb arbeiten zwei gleiche Riegel parallel." },
-  { q: "Wo wird SRAM (statischer RAM) vor allem eingesetzt?",
-    a: ["Als Cache in der CPU", "Als Arbeitsspeicher-Riegel", "In der SSD", "Auf der Grafikkarte als Lüftersteuerung"],
-    why: "SRAM ist sehr schnell, braucht keinen Refresh, ist aber teuer und braucht viel Platz. Deshalb nur als Cache." },
-  { q: "Warum ist RAM im Jahr 2026 so teuer?",
-    a: ["Hersteller bauen lieber Spezialspeicher (HBM) für KI-Chips", "Gold ist knapp geworden", "RAM wird nur noch in Handarbeit gebaut", "Weil DDR6 schon erschienen ist"],
-    why: "Der KI-Boom braucht HBM. Dafür fehlt Kapazität bei normalem DDR4/DDR5." },
-  { q: "Warum sind die Kontakte eines RAM-Riegels vergoldet?",
-    a: ["Gold korrodiert nicht, der Kontakt bleibt zuverlässig", "Damit der Riegel wertvoller aussieht", "Gold speichert zusätzliche Daten", "Damit der Riegel schwerer ist"],
-    why: "Kupfer würde oxidieren und schlecht leiten. Gold bleibt sauber, deshalb nicht mit den Fingern anfassen." },
-  { q: "Warum ist es gut für die Umwelt, RAM aufzurüsten (Green IT)?",
-    a: ["Der PC wird länger genutzt, es entsteht weniger Elektroschrott", "Neuer RAM verbraucht gar keinen Strom", "Der alte RAM wird dabei automatisch recycelt", "RAM besteht aus nachwachsenden Rohstoffen"],
-    why: "Mehr RAM macht ältere PCs oft wieder flott. Das verlängert die Nutzungsdauer und vermeidet Elektroschrott." },
-  { q: "Was solltest du tun, bevor du einen RAM-Riegel anfasst?",
-    a: ["Ein unlackiertes Metallteil berühren oder ein ESD-Armband tragen", "Die goldenen Kontakte mit dem Finger sauber reiben", "Den PC eingeschaltet lassen, damit er den Riegel erkennt", "Den Riegel kurz anpusten"],
-    why: "Statische Aufladung (ESD) kann die Chips zerstören. Das Berühren von Metall leitet sie vorher ab." },
-  { q: "Woran erkennst du, dass ein Desktop-Riegel richtig eingebaut ist?",
-    a: ["Beide Haltebügel rasten hörbar „klick“ ein", "Der Riegel steht leicht schräg im Slot", "Ein Bügel bleibt offen, damit Luft durchkommt", "Der PC piept beim Start dreimal"],
-    why: "Mit beiden Daumen gleichmäßig drücken, bis beide Bügel von selbst einrasten. Piepen beim Start heißt oft: Der Riegel sitzt nicht richtig." },
+  { t: "ind", k: 3, q: "Weißt du, was die Wordline in einer DRAM-Speicherzelle macht?",
+    a: ["Sie schaltet die Transistoren einer Zeile durch", "Sie speichert das Bit", "Sie kühlt den Chip", "Sie zählt die Wörter im Text"],
+    why: "Ist die Wordline aktiv, schalten die Transistoren durch. Über die Bitline wird dann die Ladung gelesen oder geschrieben." },
+  { t: "ind", k: 5, q: "Kannst du mir sagen, welche Bauform ein Riegel für einen Laptop hat?",
+    a: ["SO-DIMM, der kurze Riegel (ca. 7 cm)", "DIMM, der lange Riegel (ca. 13 cm)", "HBM", "SSD"],
+    why: "Laptops nutzen kurze SO-DIMM-Riegel, Desktop-PCs lange DIMM. Bei vielen dünnen Laptops ist der RAM verlötet." },
+  { t: "ind", k: 13, q: "Weißt du, woran man erkennt, dass ein Desktop-Riegel richtig eingebaut ist?",
+    a: ["Beide Haltebügel rasten hörbar „klick“ ein", "Der Riegel steht leicht schräg", "Ein Bügel bleibt offen", "Der PC piept beim Start dreimal"],
+    why: "Mit beiden Daumen gleichmäßig drücken, bis beide Bügel von selbst einrasten. Piepen heißt oft: Der Riegel sitzt nicht richtig." },
 ];
-const ROUNDS = 7, SECONDS = 20, KEY = "ram-station-bestenliste-7";
+const ROUNDS = 10, SECONDS = 25, KEY = "ram-station-bestenliste-10";
 const KEYS = [["A", "#1f4e79"], ["B", "#ef6c00"], ["C", "#2f7d32"], ["D", "#6a1b9a"]];
 
 const $ = id => document.getElementById(id);
@@ -267,7 +287,9 @@ let memoryBoard = loadBoard();
 function startQuiz() {
   player = $("name").value.trim().slice(0, 20);
   if (!player) return;
-  round = shuffle(POOL).slice(0, ROUNDS).map(q => ({ ...q, order: shuffle([0, 1, 2, 3]) }));
+  // je 2 Fragen pro Fragetechnik, dann gemischt
+  const pick = Object.keys(TECH).flatMap(t => shuffle(POOL.filter(q => q.t === t)).slice(0, ROUNDS / 5));
+  round = shuffle(pick).map(q => ({ ...q, order: q.t === "jn" ? [q.a.indexOf("Ja"), q.a.indexOf("Nein")] : shuffle(q.a.map((_, i) => i)) }));
   idx = 0; score = 0; right = 0;
   show("pQuiz");
   ask();
@@ -277,6 +299,10 @@ function ask() {
   const q = round[idx];
   $("qNr").textContent = `Frage ${idx + 1} / ${ROUNDS}`;
   $("qScore").textContent = `${score} Punkte`;
+  const tech = TECH[q.t];
+  $("qTech").style.setProperty("--tc", tech.color);
+  $("qTechName").textContent = `${tech.icon} ${tech.name}`;
+  $("qTechHint").textContent = tech.hint;
   $("qText").textContent = q.q;
   $("feedback").className = "hidden";
   $("next").classList.add("hidden");
@@ -321,7 +347,10 @@ function answer(ai, btn) {
   fb.innerHTML = "";
   const head = document.createElement("b");
   head.textContent = ok ? `✅ Richtig! +${pts} Punkte` : ai === -1 ? "⏰ Zeit abgelaufen!" : "❌ Leider falsch.";
-  fb.append(head, document.createElement("br"), document.createTextNode(q.why));
+  const more = document.createElement("span");
+  more.className = "muted small";
+  more.textContent = ` (Wiki Kap. ${q.k})`;
+  fb.append(head, document.createElement("br"), document.createTextNode(q.why), more);
   $("qScore").textContent = `${score} Punkte`;
   $("next").textContent = idx + 1 < ROUNDS ? "Nächste Frage →" : "Zum Ergebnis 🏁";
   $("next").classList.remove("hidden");
